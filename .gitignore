@@ -1,0 +1,7 @@
+data/
+pytorch/__pycache__/
+pytorch/generated.txt
+pytorch/maxlen30/
+pytorch/output/
+pytorch/snli_1.0/
+pytorch/snli_processed/
