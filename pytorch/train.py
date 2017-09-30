@@ -427,8 +427,6 @@ def grad_hook(grad):
 
 def train_gan_d(batch):
     # clamp parameters to a cube
-    for p in gan_disc.parameters():
-        p.data.clamp_(-args.gan_clamp, args.gan_clamp)
 
     autoencoder.train()
     autoencoder.zero_grad()
