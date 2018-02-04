@@ -96,6 +96,8 @@ parser.add_argument('--clip', type=float, default=1,
                     help='gradient clipping, max norm')
 parser.add_argument('--gan_clamp', type=float, default=0.01,
                     help='WGAN clamp')
+parser.add_argument('--LAMBDA', type=float, default=10,
+                    help='weight for gradient penalty. default=10')
 
 # Evaluation Arguments
 parser.add_argument('--sample', action='store_true',
@@ -457,6 +459,25 @@ def train_gan_d(batch):
     fake_hidden = gan_gen(noise)
     errD_fake = gan_disc(fake_hidden.detach())
     errD_fake.backward(mone)
+
+    def calc_gradient_penalty(disc, real_data, fake_data):
+        alpha = torch.rand(real_data.size(0))
+        alpha = to_gpu(args.cuda, alpha)
+        alpha = alpha.unsqueeze(-1)
+        differences = fake_data - real_data
+        interpolates = real_data + (alpha*differences)
+        interpolates = to_gpu(args.cuda, Variable(interpolates, requires_grad=True))
+        disc_interpolates = disc(interpolates)
+        gradients = torch.autograd.grad(outputs=disc_interpolates, inputs=interpolates,
+                grad_outputs=to_gpu(args.cuda, torch.ones(disc_interpolates.size())),
+                create_graph=True, retain_graph=True, only_inputs=True)
+        gradients = gradients[0]
+        gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean() * args.LAMBDA
+        return gradient_penalty
+
+    #calculate gradient penalty
+    gradient_penalty = calc_gradient_penalty(gan_disc, real_hidden.data, fake_hidden.data)
+    gradient_penalty.backward()
 
     # `clip_grad_norm` to prvent exploding gradient problem in RNNs / LSTMs
     torch.nn.utils.clip_grad_norm(autoencoder.parameters(), args.clip)
