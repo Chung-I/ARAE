@@ -174,7 +174,7 @@ def train_ngram_lm(kenlm_path, data_path, output_path, N):
     curdir = os.path.abspath(os.path.curdir)
     #
     command = "bin/lmplz -o "+str(N)+" <"+os.path.join(curdir, data_path) + \
-              " >"+os.path.join(curdir, output_path)
+              " >"+os.path.join(curdir, output_path) + " --discount_fallback"
     os.system("cd "+os.path.join(kenlm_path, 'build')+" && "+command)
 
     load_kenlm()
