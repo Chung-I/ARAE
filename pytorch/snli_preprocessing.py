@@ -10,7 +10,7 @@ Gets rid of repeated premise sentences.
 """
 
 
-def transform_data(in_path):
+def transform_data(in_path, keep_bracket):
     print("Loading", in_path)
 
     premises = []
@@ -21,24 +21,22 @@ def transform_data(in_path):
         for line in f:
             loaded_example = json.loads(line)
 
-            # load premise
-            raw_premise = loaded_example['sentence1_binary_parse'].split(" ")
-            premise_words = []
-            # loop through words of premise binary parse
-            for word in raw_premise:
-                # don't add parse brackets
-                if word != "(" and word != ")":
-                    premise_words.append(word)
-            premise = " ".join(premise_words)
+            def load_seq(tag):
+                raw_seq = loaded_example[tag].split(" ")
+                seq_words = []
+                if keep_bracket:
+                    seq_words = raw_seq
+                else:
+                    # loop through words of seq binary parse
+                    for word in raw_seq:
+                        # don't add parse brackets
+                        if word != "(" and word != ")":
+                            seq_words.append(word)
+                seq = " ".join(seq_words)
+                return seq
 
-            # load hypothesis
-            raw_hypothesis = \
-                loaded_example['sentence2_binary_parse'].split(" ")
-            hypothesis_words = []
-            for word in raw_hypothesis:
-                if word != "(" and word != ")":
-                    hypothesis_words.append(word)
-            hypothesis = " ".join(hypothesis_words)
+            premise = load_seq('sentence1_binary_parse')
+            hypothesis = load_seq('sentence2_binary_parse')
 
             # make sure to not repeat premiess
             if premise != last_premise:
@@ -72,10 +70,12 @@ def write_sentences(write_path, premises, hypotheses, append=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--in_path', type=str, default="../Data/snli_1.0",
+    parser.add_argument('--in_path', type=str, default="snli_1.0",
                         help='path to snli data')
-    parser.add_argument('--out_path', type=str, default="../Data/snli_lm",
+    parser.add_argument('--out_path', type=str, default="snli_lm",
                         help='path to write snli language modeling data to')
+    parser.add_argument('--keep_bracket', action='store_true',
+                        help='keep bracket or not. defaults to false')
     args = parser.parse_args()
 
     # make out-path directory if it doesn't exist
@@ -85,16 +85,16 @@ if __name__ == "__main__":
 
     # process and write test.txt and train.txt files
     premises, hypotheses = \
-        transform_data(os.path.join(args.in_path, "snli_1.0_test.jsonl"))
+        transform_data(os.path.join(args.in_path, "snli_1.0_test.jsonl"), args.keep_bracket)
     write_sentences(write_path=os.path.join(args.out_path, "test.txt"),
                     premises=premises, hypotheses=hypotheses)
 
     premises, hypotheses = \
-        transform_data(os.path.join(args.in_path, "snli_1.0_train.jsonl"))
+        transform_data(os.path.join(args.in_path, "snli_1.0_train.jsonl"), args.keep_bracket)
     write_sentences(write_path=os.path.join(args.out_path, "train.txt"),
                     premises=premises, hypotheses=hypotheses)
 
     premises, hypotheses = \
-        transform_data(os.path.join(args.in_path, "snli_1.0_dev.jsonl"))
+        transform_data(os.path.join(args.in_path, "snli_1.0_dev.jsonl"), args.keep_bracket)
     write_sentences(write_path=os.path.join(args.out_path, "train.txt"),
                     premises=premises, hypotheses=hypotheses, append=True)
