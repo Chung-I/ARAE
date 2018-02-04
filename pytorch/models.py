@@ -251,7 +251,6 @@ class Seq2Seq(nn.Module):
         # <sos>
         self.start_symbols.data.resize_(batch_size, 1)
         self.start_symbols.data.fill_(1)
-
         embedding = self.embedding_decoder(self.start_symbols)
         inputs = torch.cat([embedding, hidden.unsqueeze(1)], 2)
 
@@ -263,13 +262,13 @@ class Seq2Seq(nn.Module):
 
             if not sample:
                 vals, indices = torch.max(overvocab, 1)
+                indices = indices.unsqueeze(1)
             else:
                 # sampling
                 probs = F.softmax(overvocab/temp)
                 indices = torch.multinomial(probs, 1)
 
             all_indices.append(indices)
-
             embedding = self.embedding_decoder(indices)
             inputs = torch.cat([embedding, hidden.unsqueeze(1)], 2)
 
